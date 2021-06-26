@@ -17,42 +17,46 @@ namespace Events.Core
         public event EventHandler<PointEventArgs> Point;
         private Timer timer;
         private EventWaitHandle eventWaitHandle;
-        private Event()
+        private readonly string eventId;
+        private Event(string eventId)
         {
+            this.eventId = eventId;
             eventWaitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
         }
-        private Event(DayOfWeek[] daysOfWeek) : this()
+        private Event(string eventId, DayOfWeek[] daysOfWeek) : this(eventId)
         {
             this.daysOfWeek = daysOfWeek?.OrderBy(x => x).ToArray();
         }
-        public Event(TimeSpan[] timeSpans, DayOfWeek[] daysOfWeek) : this(daysOfWeek)
+        public Event(string eventId, TimeSpan[] timeSpans, DayOfWeek[] daysOfWeek) : this(eventId, daysOfWeek)
         {
             this.timeSpans = timeSpans.OrderBy(x => x.Ticks).ToArray();
             eventType = EventTypes.StrongSchedule;
         }
-        public Event(TimeSpan[] timeSpans) : this(timeSpans, null)
+        public Event(string eventId, TimeSpan[] timeSpans) : this(eventId, timeSpans, null)
         {
             eventType = EventTypes.WeakSchedule;
         }
-        public Event(TimeSpan timeSpan, TimeSpan start, TimeSpan end, DayOfWeek[] dayOfWeeks) : this(dayOfWeeks)
+        public Event(string eventId, TimeSpan timeSpan, TimeSpan start, TimeSpan end, DayOfWeek[] dayOfWeeks) : this(eventId, dayOfWeeks)
         {
             this.timeSpan = timeSpan;
             this.start = start;
             this.end = end;
             eventType = EventTypes.StrongInterval;
         }
-        public Event(TimeSpan timeSpan) : this(timeSpan, default, default, null)
+        public Event(string eventId, TimeSpan timeSpan) : this(eventId, timeSpan, default, default, null)
         {
             eventType = EventTypes.LooseInterval;
         }
-        public Event(TimeSpan timeSpan, TimeSpan start, TimeSpan end) : this(timeSpan, start, end, null)
+        public Event(string eventId, TimeSpan timeSpan, TimeSpan start, TimeSpan end) : this(eventId, timeSpan, start, end, null)
         {
             eventType = EventTypes.WeakInterval;
         }
-        public void Start(Boolean fireImmediately) {
+        public void Start(Boolean fireImmediately)
+        {
             _start(fireImmediately);
         }
-        public void Start(TimeSpan initialDelay) {
+        public void Start(TimeSpan initialDelay)
+        {
             _start(true, initialDelay);
         }
         private void _start(Boolean fireImmediately, TimeSpan initialDelay = default)
@@ -67,7 +71,7 @@ namespace Events.Core
                             waitTime = getWaitTime(getNextTime());
                             if (daysOfWeek.Contains(DateTime.Now.DayOfWeek) && waitTime.Ticks > 0)
                             {
-                                Point?.Invoke(this, new PointEventArgs());
+                                Point?.Invoke(this, new PointEventArgs() { EventId = eventId });
                                 timer.Change(waitTime, default);
                             }
                             else
@@ -81,7 +85,7 @@ namespace Events.Core
                     {
                         timer = new Timer((state) =>
                         {
-                            Point?.Invoke(this, new PointEventArgs());
+                            Point?.Invoke(this, new PointEventArgs() { EventId = eventId });
                             var tt = getWaitTimeAbs(getNextTime());
                             timer.Change(getWaitTimeAbs(getNextTime()), default);
                         }, this, fireImmediately && initialDelay == default ? default(TimeSpan) : fireImmediately && initialDelay != default ? initialDelay : getWaitTimeAbs(getNextTime()), default);
@@ -95,7 +99,7 @@ namespace Events.Core
                             now = DateTime.Now.TimeOfDay;
                             if (daysOfWeek.Contains(DateTime.Now.DayOfWeek) && now >= start && now < end)
                             {
-                                Point?.Invoke(this, new PointEventArgs());
+                                Point?.Invoke(this, new PointEventArgs() { EventId = eventId });
                                 timer.Change(timeSpan, default);
                             }
                             else
@@ -114,7 +118,7 @@ namespace Events.Core
                             now = DateTime.Now.TimeOfDay;
                             if (now >= start && now < end)
                             {
-                                Point?.Invoke(this, new PointEventArgs());
+                                Point?.Invoke(this, new PointEventArgs() { EventId = eventId });
                                 timer.Change(timeSpan, TimeSpan.FromTicks(0));
                             }
                             else
@@ -129,14 +133,15 @@ namespace Events.Core
                     {
                         timer = new Timer((state) =>
                         {
-                            Point?.Invoke(this, new PointEventArgs());
+                            Point?.Invoke(this, new PointEventArgs() { EventId = eventId });
                             timer.Change(timeSpan, default);
                         }, this, fireImmediately && initialDelay == default ? default(TimeSpan) : fireImmediately && initialDelay != default ? initialDelay : timeSpan, default);
                         break;
                     }
             }
         }
-        public void Stop() {
+        public void Stop()
+        {
             timer.Change(Timeout.Infinite, Timeout.Infinite);
             timer.Dispose();
         }

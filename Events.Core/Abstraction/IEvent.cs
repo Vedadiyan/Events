@@ -8,6 +8,6 @@ namespace Events.Core.Abstraction
     }
     public class PointEventArgs : EventArgs
     {
-        public DateTime GivenDateTime { get; }
+        public string EventId {get; set;}
     }
 }

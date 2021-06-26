@@ -8,7 +8,7 @@ namespace Events.Test
     {
         static void Main(string[] args)
         {
-            Events.Core.Event events = new Core.Event(TimeSpan.FromSeconds(5));
+            Events.Core.Event events = new Core.Event("", TimeSpan.FromSeconds(5));
             events.Point += (sender, e)=> {
                 Console.WriteLine("Hit");
             };
